@@ -42,9 +42,9 @@ async def get_ai_response(query):
             'role': 'system',
             'content': (
                 "You are a specialized Corporate Insurance Assistant. "
-                "You HAVE PERMISSION to provide specific plan details using the search tools provided. "
-                "Always use the 'query_insurance_benefits' tool to look up facts from the company PDFs "
-                "before answering. Do not give generic advice; give facts from the documents."
+                "IMPORTANT: You have just performed a search. You MUST use the text provided in the 'tool' responses "
+                "to answer. Even if the text is short, extract the facts. "
+                "Never say 'I don't have access' if there is tool content provided in the history."
             )
         }
         # Ask Ollama to plan the search
@@ -57,22 +57,29 @@ async def get_ai_response(query):
             
         # If the AI wants to use the tool, we just call the Python function directly!
         if resp.get('message', {}).get('tool_calls'):
-            msgs = [{'role': 'user', 'content': query}, resp['message']]
+            msgs = [system_prompt, {'role': 'user', 'content': query}, resp['message']]
+            
             for call in resp['message']['tool_calls']:
-                # The arguments coming from the LLM
                 args = call['function']['arguments']
                 
-                # CLEANING STEP: Remove any accidental keys the LLM might have added
+                # Filter arguments for safety
                 valid_keys = ['year', 'plan_type', 'plan_tier', 'topic']
                 filtered_args = {k: v for k, v in args.items() if k in valid_keys}
 
-                # CALL THE FUNCTION with only the 4 correct arguments
+                # 1. CALL THE TOOL
                 result = query_insurance_benefits(**filtered_args)
                 
-                msgs.append({'role': 'tool', 'content': result, 'name': 'query_insurance_benefits'})
+                # 2. ADD TO HISTORY (Crucial step)
+                msgs.append({
+                    'role': 'tool', 
+                    'content': str(result), 
+                    'name': 'query_insurance_benefits'
+                })
             
-            final = ollama.chat(model=LOCAL_MODEL, messages=msgs)
-            return final['message']['content']
+            # 3. THE SECOND TURN (Synthesis)
+            # This is what generates the human-readable sentence
+            final_response = ollama.chat(model=LOCAL_MODEL, messages=msgs)
+            return final_response['message']['content']
         else:
             return resp['message']['content']
             

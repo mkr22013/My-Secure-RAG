@@ -41,7 +41,7 @@ def generate_sub_index(pdf_path, plan_info):
 def build_all():
     master_metadata = []
     if not os.path.exists(DOC_BASE_DIR):
-        print(f"Error: {DOC_BASE_DIR} folder not found. Run dummy script first!")
+        print(f"Error: {DOC_BASE_DIR} folder not found. Run dummy script (create_test_docs.py) first!")
         return
 
     for year_folder in os.listdir(DOC_BASE_DIR):
@@ -59,3 +59,7 @@ def build_all():
     print("--- Master Indexing Complete ---")
 
 if __name__ == "__main__": build_all()
+
+
+
+
