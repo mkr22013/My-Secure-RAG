@@ -1,0 +1,20 @@
+[
+    {
+        "year": 2024,
+        "type": "Medical",
+        "tier": "Gold",
+        "sub_index_file": "C:\\Personal\\AI\\My-Secure-RAG\\indices\\2024_medical_gold.json"
+    },
+    {
+        "year": 2025,
+        "type": "Dental",
+        "tier": "Silver",
+        "sub_index_file": "C:\\Personal\\AI\\My-Secure-RAG\\indices\\2025_dental_silver.json"
+    },
+    {
+        "year": 2025,
+        "type": "Medical",
+        "tier": "Gold",
+        "sub_index_file": "C:\\Personal\\AI\\My-Secure-RAG\\indices\\2025_medical_gold.json"
+    }
+]
