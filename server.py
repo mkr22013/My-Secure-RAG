@@ -14,19 +14,15 @@ def query_insurance_benefits(year, plan_type, plan_tier, topic):
         master_map = json.load(f)
     
     target = None
-    # Use lowercase/strip on the LLM's incoming arguments
-    q_year = str(year).strip()
-    q_type = str(plan_type).lower().strip()
-    q_tier = str(plan_tier).lower().strip()
-
     for item in master_map:
-        # Match against the Index
-        y_match = str(item["year"]).strip() == q_year
-        # Check if 'Medical' is in 'Medical Plan'
-        t_match = q_type in str(item["type"]).lower() or str(item["type"]).lower() in q_type
-        tr_match = q_tier in str(item["tier"]).lower() or str(item["tier"]).lower() in q_tier
+        # Match Year (Number or String)
+        q_year = str(item["year"]).strip() == str(year).strip()
+        # Match Type (Is 'Med' in 'Medical'?)
+        q_type = plan_type.lower()[:3] in item["type"].lower()
+        # Match Tier (Is 'Gold' in 'Gold Plan'?)
+        q_tier = plan_tier.lower()[:3] in item["tier"].lower()
         
-        if y_match and t_match and tr_match:
+        if q_year and q_type and q_tier:
             target = item
             break
             
@@ -37,12 +33,38 @@ def query_insurance_benefits(year, plan_type, plan_tier, topic):
     with open(target["sub_index_file"], "r") as f:
         sub_index = json.load(f)
     
-    # Search the keywords we generated in indexer.py
-    best_page = next((p for p in sub_index if topic.lower() in p["keywords"]), None)
-    if not best_page: return f"INFO: Topic '{topic}' not found in {year} booklet."
+    # Use a list of matches instead of 'next' to find the most relevant section
+    best_page_data = next((p for p in sub_index if topic.lower() in p["keywords"]), None)
+    
+    if not best_page_data: 
+        return f"INFO: Topic '{topic}' not found in {year} {plan_tier} {plan_type} booklet."
 
-    reader = PdfReader(best_page["file_path"])
-    content = reader.pages[best_page["page_number"]].extract_text()
-    return f"SOURCE: {best_page['file_path']} (Pg {best_page['page_number']})\nCONTENT: {content}"
+    # --- START OF SLIDING WINDOW EXTRACTION ---
+    try:
+        reader = PdfReader(best_page_data["file_path"])
+        current_page = best_page_data["page_number"]
+        total_pages = len(reader.pages)
 
-if __name__ == "__main__": mcp.run(transport="stdio")
+        # We grab the page before and the page after for full context
+        # max(0, ...) ensures we don't go below page 1
+        # min(total_pages - 1, ...) ensures we don't go past the last page
+        start_range = max(0, current_page - 1)
+        end_range = min(total_pages - 1, current_page + 1)
+
+        full_context = ""
+        for p in range(start_range, end_range + 1):
+            page_text = reader.pages[p].extract_text()
+            full_context += f"\n--- DOCUMENT PAGE {p + 1} ---\n{page_text}\n"
+
+        # Return the multi-page context to the LLM
+        return (
+            f"SOURCE: {best_page_data['file_path']}\n"
+            f"MATCH FOUND ON PAGE: {current_page + 1}\n"
+            f"RETRIEVED WINDOW: Pages {start_range + 1} to {end_range + 1}\n"
+            f"CONTENT:\n{full_context}"
+        )
+    except Exception as e:
+        return f"ERROR during PDF reading: {str(e)}"
+
+if __name__ == "__main__":
+    mcp.run(transport="stdio")
