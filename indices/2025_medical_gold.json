@@ -1,13 +1,12 @@
 [
     {
-        "file_path": "C:\\Personal\\AI\\My-Secure-RAG\\docs\\2025\\Medical_Gold.pdf",
         "page_number": 0,
-        "topic": "Medical Insurance",
+        "topic": "Annual Deductible",
         "keywords": [
-            "annual deductible",
-            "medical plan",
-            "plan year",
-            "primary care physician",
+            "medicalgoldpdf",
+            "plan year 2025",
+            "medical",
+            "gold",
             "deductible"
         ]
     }

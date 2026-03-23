@@ -1,14 +1,13 @@
 [
     {
-        "file_path": "C:\\Personal\\AI\\My-Secure-RAG\\docs\\2024\\Medical_Gold.pdf",
         "page_number": 0,
-        "topic": "Health Insurance",
+        "topic": "Annual Deductible",
         "keywords": [
-            "annual deductible",
-            "medical",
-            "gold",
-            "deductible",
-            "insurance"
+            "medicalgoldpdf",
+            "plan year 2024",
+            "plan type medical",
+            "tier gold",
+            "deductible"
         ]
     }
 ]
