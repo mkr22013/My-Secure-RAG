@@ -70,20 +70,30 @@ def query_insurance_benefits(year: int = None, plan_type: str = None, plan_tier:
         with open(sub_index_file, "r") as f:
             sub_index = json.load(f)
         
-        # Fuzzy keyword matching for the specific benefit topic
+        # --- THE FIX: SMART TOPIC MATCHING & FALLBACK ---
+        # 1. Fuzzy Topic Match
         best_page_data = next((
             p for p in sub_index 
             if any(topic.lower() in k.lower() or k.lower() in topic.lower() for k in p["keywords"])
+            or topic.lower() in p["topic"].lower()
         ), None)
-        
+
+        # 2. THE NUCLEAR FALLBACK (Add this!)
+        # If we didn't find the specific topic, just return the first page so the LLM can read it.
+        if not best_page_data and len(sub_index) > 0:
+            best_page_data = sub_index[0] 
+
         if not best_page_data:
             combined_results += f"\n--- {r_year} {r_tier} {r_type} ---\nINFO: Topic '{topic}' not found.\n"
             continue
 
         try:
             reader = PdfReader(pdf_path)
-            current_page = best_page_data["page_number"]
+            # Ensure page number is an int
+            current_page = int(best_page_data.get("page_number", 0))
+            
             total_pages = len(reader.pages)
+            # Sliding window of 3 pages for context
             start_range = max(0, current_page - 1)
             end_range = min(total_pages - 1, current_page + 1)
 
@@ -95,6 +105,7 @@ def query_insurance_benefits(year: int = None, plan_type: str = None, plan_tier:
             combined_results += f"\n--- {r_year} {r_tier} {r_type} ---\n{page_context}\n"
         except Exception as e:
             combined_results += f"\n--- {r_year} {r_tier} {r_type} ---\nPDF ERROR: {str(e)}\n"
+
 
     return combined_results
 
